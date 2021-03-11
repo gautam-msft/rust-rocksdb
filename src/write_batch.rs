@@ -49,6 +49,121 @@ pub trait WriteBatchIterator {
     fn delete(&mut self, key: Box<[u8]>);
 }
 
+pub trait WriteBatchIteratorComplete : WriteBatchIterator {
+    /// Called with a column_family_id, key and value that were `put` into the batch.
+    fn merge_cf(&mut self, column_family_id: u32, key: Box<[u8]>, value: Box<[u8]>);
+
+    /// Called with a key and value that were `put` into the batch.
+    fn merge(&mut self, key: Box<[u8]>, value: Box<[u8]>);
+
+    /// Called with a column_family_id, key and value that were `put` into the batch.
+    fn put_cf(&mut self, column_family_id: u32, key: Box<[u8]>, value: Box<[u8]>);
+
+    /// Called with a key and value that were `put` into the batch.
+    fn put(&mut self, key: Box<[u8]>, value: Box<[u8]>);
+
+    /// Called with a column_family_id, key that was `delete`d from the batch.
+    fn single_delete_cf(&mut self, column_family_id: u32, key: Box<[u8]>);
+
+    /// Called with a key that was `delete`d from the batch.
+    fn single_delete(&mut self, key: Box<[u8]>);
+
+    /// Called with a column_family_id, key that was `delete`d from the batch.
+    fn delete_cf(&mut self, column_family_id: u32, key: Box<[u8]>);
+
+    /// Called with a key that was `delete`d from the batch.
+    fn delete(&mut self, key: Box<[u8]>);
+
+    /// Called with a column_family_id, begin_key and end_key for range that was
+    /// `delete`d from the batch.
+    fn delete_range_cf(
+        &mut self,
+        column_family_id: u32,
+        begin_key: Box<[u8]>,
+        end_key: Box<[u8]>);
+
+    fn log_data(&mut self, data: Box<[u8]>);
+
+    /// Called with a column_family_id, key and value that were `put` into the batch.
+    fn put_blob_index(&mut self, column_family_id: u32, key: Box<[u8]>, value: Box<[u8]>);
+
+    /// Called on before preparation
+    fn mark_begin_prepare(&mut self);
+
+    /// Called at the end of ...
+    fn mark_end_prepare(&mut self, xid: Box<[u8]>);
+
+    /// Called when noop was processed
+    fn mark_noop(&mut self, empty_batch: bool);
+
+    /// Called for rollback on DB
+    fn mark_rollback(&mut self, xid: Box<[u8]>);
+
+    /// Called for commit of DB
+    fn mark_commit(&mut self, xid: Box<[u8]>);
+}
+
+unsafe extern "C" fn writebatch_merge_cf_callback(
+    state: *mut c_void,
+    cf: u32,
+    k: *const c_char,
+    klen: usize,
+    v: *const c_char,
+    vlen: usize,
+) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    let value = slice::from_raw_parts(v as *const u8, vlen as usize);
+    leaked_cb.merge_cf(
+        cf,
+        key.to_vec().into_boxed_slice(),
+        value.to_vec().into_boxed_slice(),
+    );
+}
+
+unsafe extern "C" fn writebatch_merge_callback(
+    state: *mut c_void,
+    k: *const c_char,
+    klen: usize,
+    v: *const c_char,
+    vlen: usize,
+) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    let value = slice::from_raw_parts(v as *const u8, vlen as usize);
+    leaked_cb.merge(
+        key.to_vec().into_boxed_slice(),
+        value.to_vec().into_boxed_slice(),
+    );
+}
+
+unsafe extern "C" fn writebatch_put_cf_callback(
+    state: *mut c_void,
+    cf: u32,
+    k: *const c_char,
+    klen: usize,
+    v: *const c_char,
+    vlen: usize,
+) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    let value = slice::from_raw_parts(v as *const u8, vlen as usize);
+    leaked_cb.put_cf(
+        cf,
+        key.to_vec().into_boxed_slice(),
+        value.to_vec().into_boxed_slice(),
+    );
+}
+
 unsafe extern "C" fn writebatch_put_callback(
     state: *mut c_void,
     k: *const c_char,
@@ -68,6 +183,36 @@ unsafe extern "C" fn writebatch_put_callback(
     );
 }
 
+unsafe extern "C" fn writebatch_put_blob_index_callback(
+    state: *mut c_void,
+    cf: u32,
+    k: *const c_char,
+    klen: usize,
+    v: *const c_char,
+    vlen: usize,
+) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    let value = slice::from_raw_parts(v as *const u8, vlen as usize);
+    leaked_cb.put_blob_index(
+        cf,
+        key.to_vec().into_boxed_slice(),
+        value.to_vec().into_boxed_slice(),
+    );
+}
+
+unsafe extern "C" fn writebatch_delete_cf_callback(state: *mut c_void, cf_id: u32, k: *const c_char, klen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    leaked_cb.delete_cf(cf_id, key.to_vec().into_boxed_slice());
+}
+
 unsafe extern "C" fn writebatch_delete_callback(state: *mut c_void, k: *const c_char, klen: usize) {
     // coerce the raw pointer back into a box, but "leak" it so we prevent
     // freeing the resource before we are done with it
@@ -76,6 +221,96 @@ unsafe extern "C" fn writebatch_delete_callback(state: *mut c_void, k: *const c_
     let key = slice::from_raw_parts(k as *const u8, klen as usize);
     leaked_cb.delete(key.to_vec().into_boxed_slice());
 }
+
+unsafe extern "C" fn writebatch_delete_range_cf_callback(
+    state: *mut c_void,
+    cf_id: u32,
+    begin_k: *const c_char,
+    begin_klen: usize,
+    end_k: *const c_char,
+    end_klen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let begin_key = slice::from_raw_parts(begin_k as *const u8, begin_klen as usize);
+    let end_key = slice::from_raw_parts(end_k as *const u8, end_klen as usize);
+    leaked_cb.delete_range_cf(
+        cf_id,
+        begin_key.to_vec().into_boxed_slice(),
+        end_key.to_vec().into_boxed_slice());
+}
+
+unsafe extern "C" fn writebatch_single_delete_cf_callback(state: *mut c_void, cf_id: u32, k: *const c_char, klen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    leaked_cb.single_delete_cf(cf_id, key.to_vec().into_boxed_slice());
+}
+
+unsafe extern "C" fn writebatch_single_delete_callback(state: *mut c_void, k: *const c_char, klen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let key = slice::from_raw_parts(k as *const u8, klen as usize);
+    leaked_cb.single_delete(key.to_vec().into_boxed_slice());
+}
+
+unsafe extern "C" fn writebatch_log_data_callback(state: *mut c_void, data: *const c_char, datalen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let data = slice::from_raw_parts(data as *const u8, datalen as usize);
+    leaked_cb.log_data(data.to_vec().into_boxed_slice());
+}
+
+unsafe extern "C" fn writebatch_mark_begin_prepare_callback(state: *mut c_void, _: bool) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    leaked_cb.mark_begin_prepare();
+}
+
+unsafe extern "C" fn writebatch_mark_end_prepare_callback(state: *mut c_void, xid: *const c_char, xidlen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let xid = slice::from_raw_parts(xid as *const u8, xidlen as usize);
+    leaked_cb.mark_end_prepare(xid.to_vec().into_boxed_slice());
+}
+
+unsafe extern "C" fn writebatch_mark_noop_callback(state: *mut c_void, empty_batch: bool) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    leaked_cb.mark_noop(empty_batch);
+}
+
+unsafe extern "C" fn writebatch_mark_rollback_callback(state: *mut c_void, xid: *const c_char, xidlen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let xid = slice::from_raw_parts(xid as *const u8, xidlen as usize);
+    leaked_cb.mark_rollback(xid.to_vec().into_boxed_slice());
+}
+
+unsafe extern "C" fn writebatch_mark_commit_callback(state: *mut c_void, xid: *const c_char, xidlen: usize) {
+    // coerce the raw pointer back into a box, but "leak" it so we prevent
+    // freeing the resource before we are done with it
+    let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
+    let leaked_cb = Box::leak(boxed_cb);
+    let xid = slice::from_raw_parts(xid as *const u8, xidlen as usize);
+    leaked_cb.mark_commit(xid.to_vec().into_boxed_slice());
+}
+
 
 impl WriteBatch {
     pub fn len(&self) -> usize {
@@ -114,6 +349,39 @@ impl WriteBatch {
         }
     }
 
+    /// Iterate the put and delete operations within this write batch. Note that
+    /// this does _not_ return an `Iterator` but instead will invoke the `put()`
+    /// and `delete()` member functions of the provided `WriteBatchIterator`
+    /// trait implementation.
+    pub fn iterate_complete(&self, callbacks: &mut dyn WriteBatchIteratorComplete) {
+        let state = Box::into_raw(Box::new(callbacks));
+        unsafe {
+            ffi::rocksdb_writebatch_iterate_complete(
+                self.inner,
+                state as *mut c_void,
+                Some(writebatch_merge_cf_callback),
+                Some(writebatch_merge_callback),
+                Some(writebatch_put_cf_callback),
+                Some(writebatch_put_callback),
+                Some(writebatch_put_blob_index_callback),
+                Some(writebatch_delete_cf_callback),
+                Some(writebatch_delete_callback),
+                Some(writebatch_delete_range_cf_callback),
+                Some(writebatch_single_delete_cf_callback),
+                Some(writebatch_single_delete_callback),
+                Some(writebatch_log_data_callback),
+                Some(writebatch_mark_begin_prepare_callback),
+                Some(writebatch_mark_end_prepare_callback),
+                Some(writebatch_mark_noop_callback),
+                Some(writebatch_mark_rollback_callback),
+                Some(writebatch_mark_commit_callback),
+            );
+            // we must manually set the raw box free since there is no
+            // associated "destroy" callback for this object
+            Box::from_raw(state);
+        }
+    }
+
     /// Insert a value into the database under the given key.
     pub fn put<K, V>(&mut self, key: K, value: V)
     where
@@ -130,6 +398,22 @@ impl WriteBatch {
                 key.len() as size_t,
                 value.as_ptr() as *const c_char,
                 value.len() as size_t,
+            );
+        }
+    }
+
+    /// Insert a value into the database under the given key.
+    pub fn put_log_data<L>(&mut self, data: L)
+    where
+        L: AsRef<[u8]>,
+    {
+        let data = data.as_ref();
+
+        unsafe {
+            ffi::rocksdb_writebatch_put_log_data(
+                self.inner,
+                data.as_ptr() as *const c_char,
+                data.len() as size_t,
             );
         }
     }
