@@ -268,7 +268,7 @@ unsafe extern "C" fn writebatch_log_data_callback(state: *mut c_void, data: *con
     leaked_cb.log_data(data.to_vec().into_boxed_slice());
 }
 
-unsafe extern "C" fn writebatch_mark_begin_prepare_callback(state: *mut c_void, _: bool) {
+unsafe extern "C" fn writebatch_mark_begin_prepare_callback(state: *mut c_void) {
     // coerce the raw pointer back into a box, but "leak" it so we prevent
     // freeing the resource before we are done with it
     let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
@@ -285,12 +285,12 @@ unsafe extern "C" fn writebatch_mark_end_prepare_callback(state: *mut c_void, xi
     leaked_cb.mark_end_prepare(xid.to_vec().into_boxed_slice());
 }
 
-unsafe extern "C" fn writebatch_mark_noop_callback(state: *mut c_void, empty_batch: bool) {
+unsafe extern "C" fn writebatch_mark_noop_callback(state: *mut c_void, empty_batch: i8) {
     // coerce the raw pointer back into a box, but "leak" it so we prevent
     // freeing the resource before we are done with it
     let boxed_cb = Box::from_raw(state as *mut &mut dyn WriteBatchIteratorComplete);
     let leaked_cb = Box::leak(boxed_cb);
-    leaked_cb.mark_noop(empty_batch);
+    leaked_cb.mark_noop(empty_batch != 0);
 }
 
 unsafe extern "C" fn writebatch_mark_rollback_callback(state: *mut c_void, xid: *const c_char, xidlen: usize) {
