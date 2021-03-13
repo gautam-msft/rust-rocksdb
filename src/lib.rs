@@ -110,7 +110,7 @@ pub use crate::{
     slice_transform::SliceTransform,
     snapshot::Snapshot,
     sst_file_writer::SstFileWriter,
-    write_batch::{WriteBatch, WriteBatchIterator},
+    write_batch::{WriteBatch, WriteBatchIterator, WriteBatchIteratorComplete},
 };
 
 use librocksdb_sys as ffi;

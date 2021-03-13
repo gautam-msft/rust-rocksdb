@@ -59,9 +59,6 @@ pub trait WriteBatchIteratorComplete : WriteBatchIterator {
     /// Called with a column_family_id, key and value that were `put` into the batch.
     fn put_cf(&mut self, column_family_id: u32, key: Box<[u8]>, value: Box<[u8]>);
 
-    /// Called with a key and value that were `put` into the batch.
-    fn put(&mut self, key: Box<[u8]>, value: Box<[u8]>);
-
     /// Called with a column_family_id, key that was `delete`d from the batch.
     fn single_delete_cf(&mut self, column_family_id: u32, key: Box<[u8]>);
 
@@ -70,9 +67,6 @@ pub trait WriteBatchIteratorComplete : WriteBatchIterator {
 
     /// Called with a column_family_id, key that was `delete`d from the batch.
     fn delete_cf(&mut self, column_family_id: u32, key: Box<[u8]>);
-
-    /// Called with a key that was `delete`d from the batch.
-    fn delete(&mut self, key: Box<[u8]>);
 
     /// Called with a column_family_id, begin_key and end_key for range that was
     /// `delete`d from the batch.
