@@ -76,6 +76,7 @@ db/write_batch.cc
 db/write_batch_base.cc
 db/write_controller.cc
 db/write_thread.cc
+env/composite_env.cc
 env/env.cc
 env/env_chroot.cc
 env/env_encryption.cc
@@ -90,6 +91,7 @@ file/delete_scheduler.cc
 file/file_prefetch_buffer.cc
 file/file_util.cc
 file/filename.cc
+file/line_file_reader.cc
 file/random_access_file_reader.cc
 file/read_write_util.cc
 file/readahead_raf.cc
@@ -206,6 +208,7 @@ util/hash.cc
 util/murmurhash.cc
 util/random.cc
 util/rate_limiter.cc
+util/ribbon_config.cc
 util/slice.cc
 util/file_checksum_helper.cc
 util/status.cc
