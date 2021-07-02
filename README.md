@@ -1,6 +1,5 @@
 rust-rocksdb
 ============
-[![Build Status](https://travis-ci.org/rust-rocksdb/rust-rocksdb.svg?branch=master)](https://travis-ci.org/rust-rocksdb/rust-rocksdb)
 ![RocksDB build](https://github.com/rust-rocksdb/rust-rocksdb/workflows/RocksDB%20build/badge.svg?branch=master)
 [![crates.io](https://img.shields.io/crates/v/rocksdb.svg)](https://crates.io/crates/rocksdb)
 [![documentation](https://docs.rs/rocksdb/badge.svg)](https://docs.rs/rocksdb)
@@ -42,3 +41,12 @@ compression support, make these changes to your Cargo.toml:
 default-features = false
 features = ["lz4"]
 ```
+
+## Multi-threaded ColumnFamily alternation
+
+The underlying RocksDB does allow column families to be created and dropped
+from multiple threads concurrently. But this crate doesn't allow it by default
+for compatibility. If you need to modify column families concurrently, enable
+crate feature called `multi-threaded-cf`, which makes this binding's
+data structures to use RwLock by default. Alternatively, you can directly create
+`DBWithThreadMode<MultiThreaded>` without enabling the crate feature.

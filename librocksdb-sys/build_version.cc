@@ -1,10 +1,15 @@
-#include "build_version.h"
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+
+#include <memory>
+
+#include "rocksdb/version.h"
+#include "util/string_util.h"
 
 // The build script may replace these values with real values based
 // on whether or not GIT is available and the platform settings
-static const std::string rocksdb_build_git_sha  = "rocksdb_build_git_sha:9484298b593cec777da3bbd3f0efa5135547dcfb";
-static const std::string rocksdb_build_git_tag = "rocksdb_build_git_tag:dev/gb/add_full_c_wal_iterator_support";
-static const std::string rocksdb_build_date = __DATE__;
+static const std::string rocksdb_build_git_sha  = "rocksdb_build_git_sha:645c445978bb22c8c7791f90a0d9931928a58045";
+static const std::string rocksdb_build_git_tag = "rocksdb_build_git_tag:master";
+static const std::string rocksdb_build_date = "rocksdb_build_date:2021-04-19 19:57:42";
 
 namespace ROCKSDB_NAMESPACE {
 static void AddProperty(std::unordered_map<std::string, std::string> *props, const std::string& name) {
@@ -54,5 +59,4 @@ std::string GetRocksBuildInfoAsString(const std::string& program, bool verbose) 
   return info;
 }
 } // namespace ROCKSDB_NAMESPACE
-
 
