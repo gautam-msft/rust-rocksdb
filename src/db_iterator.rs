@@ -81,9 +81,9 @@ pub struct DBRawIteratorWithThreadMode<'a, D: DBAccess> {
 }
 
 impl<'a, D: DBAccess> DBRawIteratorWithThreadMode<'a, D> {
-    pub(crate) fn new(db: &D, readopts: ReadOptions) -> DBRawIteratorWithThreadMode<'a, D> {
+    pub(crate) fn new(db: &D, readopts: ReadOptions) -> Self {
         unsafe {
-            DBRawIteratorWithThreadMode {
+            Self {
                 inner: ffi::rocksdb_create_iterator(db.inner(), readopts.inner),
                 _readopts: readopts,
                 db: PhantomData,
@@ -95,9 +95,9 @@ impl<'a, D: DBAccess> DBRawIteratorWithThreadMode<'a, D> {
         db: &'a D,
         cf_handle: *mut ffi::rocksdb_column_family_handle_t,
         readopts: ReadOptions,
-    ) -> DBRawIteratorWithThreadMode<'a, D> {
+    ) -> Self {
         unsafe {
-            DBRawIteratorWithThreadMode {
+            Self {
                 inner: ffi::rocksdb_create_iterator_cf(db.inner(), readopts.inner, cf_handle),
                 _readopts: readopts,
                 db: PhantomData,
@@ -471,7 +471,7 @@ impl<'a, D: DBAccess> Iterator for DBIteratorWithThreadMode<'a, D> {
         }
 
         if self.raw.valid() {
-            // .key() and .value() only ever return None if valid == false, which we've just cheked
+            // .key() and .value() only ever return None if valid == false, which we've just checked
             Some((
                 Box::from(self.raw.key().unwrap()),
                 Box::from(self.raw.value().unwrap()),
