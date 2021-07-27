@@ -2562,6 +2562,34 @@ impl Options {
         }
     }
 
+    /// Sets bool to use two write queues
+    ///
+    /// If enabled it uses two queues for writes, one for the ones with
+    /// disable_memtable and one for the ones that also write to memtable. This
+    /// allows the memtable writes not to lag behind other writes. It can be used
+    /// to optimize MySQL 2PC in which only the commits, which are serial, write to
+    /// memtable.
+    ///
+    /// Default: false
+    pub fn set_two_write_queues(&mut self, use_two_write_queues: bool) {
+        unsafe {
+            ffi::rocksdb_options_set_manual_WAL_flush(self.inner, use_two_write_queues as i32);
+        }
+    }
+
+    /// Sets bool to use manual WAL flush
+    ///
+    /// If true WAL is not flushed automatically after each write. Instead it
+    /// relies on manual invocation of FlushWAL to write the WAL buffer to its
+    /// file.
+    ///
+    /// Default: false
+    pub fn set_manual_wal_flush(&mut self, use_manual_flush: bool) {
+        unsafe {
+            ffi::rocksdb_options_set_manual_WAL_flush(self.inner, use_manual_flush as i32);
+        }
+    }
+
     /// Sets the number of bytes to preallocate (via fallocate) the manifest files.
     ///
     /// Default is 4MB, which is reasonable to reduce random IO
