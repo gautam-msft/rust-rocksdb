@@ -598,14 +598,6 @@ impl<T: ThreadMode> DBWithThreadMode<T> {
         Ok(())
     }
 
-    /// Flushes WAL to files on the disk.
-    pub fn flush_wal(&self, sync: bool) -> Result<(), Error> {
-        unsafe {
-            ffi_try!(ffi::rocksdb_flush_wal(self.inner, sync as i32));
-        }
-        Ok(())
-    }
-
     /// Flushes database memtables to SST files on the disk.
     pub fn flush_opt(&self, flushopts: &FlushOptions) -> Result<(), Error> {
         unsafe {

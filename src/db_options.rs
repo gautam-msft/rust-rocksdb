@@ -2609,19 +2609,6 @@ impl Options {
         }
     }
 
-    /// Sets bool to use manual WAL flush
-    ///
-    /// If true WAL is not flushed automatically after each write. Instead it
-    /// relies on manual invocation of FlushWAL to write the WAL buffer to its
-    /// file.
-    ///
-    /// Default: false
-    pub fn set_manual_wal_flush(&mut self, use_manual_flush: bool) {
-        unsafe {
-            ffi::rocksdb_options_set_manual_WAL_flush(self.inner, use_manual_flush as i32);
-        }
-    }
-
     /// Sets the number of bytes to preallocate (via fallocate) the manifest files.
     ///
     /// Default is 4MB, which is reasonable to reduce random IO
