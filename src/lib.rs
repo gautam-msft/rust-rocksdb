@@ -60,7 +60,6 @@
     clippy::cast_possible_wrap, clippy::cast_possible_truncation, clippy::cast_sign_loss,
     // Next lints produce too much noise/false positives.
     clippy::module_name_repetitions, clippy::similar_names, clippy::must_use_candidate,
-    clippy::pub_enum_variant_names,
     // '... may panic' lints.
     clippy::indexing_slicing,
     // Too much work to fix.
@@ -102,7 +101,7 @@ pub use crate::{
         ColumnFamilyRef, DEFAULT_COLUMN_FAMILY_NAME,
     },
     compaction_filter::Decision as CompactionDecision,
-    db::{DBWithThreadMode, LiveFile, MultiThreaded, SingleThreaded, DB},
+    db::{DBWithThreadMode, LiveFile, MultiThreaded, SingleThreaded, ThreadMode, DB},
     db_iterator::{
         DBIterator, DBIteratorWithThreadMode, DBRawIterator, DBRawIteratorWithThreadMode,
         DBWALIterator, Direction, IteratorMode,
@@ -172,9 +171,10 @@ impl fmt::Display for Error {
 #[cfg(test)]
 mod test {
     use super::{
-        BlockBasedOptions, BoundColumnFamily, ColumnFamily, ColumnFamilyDescriptor, DBIterator,
-        DBRawIterator, IngestExternalFileOptions, Options, PlainTableFactoryOptions, ReadOptions,
-        Snapshot, SstFileWriter, WriteBatch, WriteOptions, DB,
+        BlockBasedOptions, BoundColumnFamily, Cache, ColumnFamily, ColumnFamilyDescriptor,
+        DBIterator, DBRawIterator, Env, IngestExternalFileOptions, Options,
+        PlainTableFactoryOptions, ReadOptions, Snapshot, SstFileWriter, WriteBatch, WriteOptions,
+        DB,
     };
 
     #[test]
@@ -201,6 +201,8 @@ mod test {
         is_send::<BoundColumnFamily<'_>>();
         is_send::<SstFileWriter>();
         is_send::<WriteBatch>();
+        is_send::<Cache>();
+        is_send::<Env>();
     }
 
     #[test]
@@ -221,5 +223,7 @@ mod test {
         is_sync::<PlainTableFactoryOptions>();
         is_sync::<ColumnFamilyDescriptor>();
         is_sync::<SstFileWriter>();
+        is_sync::<Cache>();
+        is_sync::<Env>();
     }
 }

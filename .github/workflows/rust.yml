@@ -41,7 +41,7 @@ jobs:
         uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: -- -D warnings
+          args: --all-targets -- -D warnings
 
   audit:
     name: Security audit
@@ -99,3 +99,9 @@ jobs:
         with:
           command: test
           args: --features multi-threaded-cf
+      - name: Run rocksdb tests (jemalloc)
+        if: runner.os != 'Windows'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features jemalloc

@@ -37,16 +37,18 @@ impl<'db> Checkpoint<'db> {
     ///
     /// Does not actually produce checkpoints, call `.create_checkpoint()` method to produce
     /// a DB checkpoint.
-    pub fn new(db: &'db DB) -> Result<Checkpoint<'db>, Error> {
+    pub fn new(db: &'db DB) -> Result<Self, Error> {
         let checkpoint: *mut ffi::rocksdb_checkpoint_t;
 
-        unsafe { checkpoint = ffi_try!(ffi::rocksdb_checkpoint_object_create(db.inner)) };
+        unsafe {
+            checkpoint = ffi_try!(ffi::rocksdb_checkpoint_object_create(db.inner));
+        }
 
         if checkpoint.is_null() {
             return Err(Error::new("Could not create checkpoint object.".to_owned()));
         }
 
-        Ok(Checkpoint {
+        Ok(Self {
             inner: checkpoint,
             _db: PhantomData,
         })
