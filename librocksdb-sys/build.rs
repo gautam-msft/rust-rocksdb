@@ -152,6 +152,7 @@ fn build_rocksdb() {
         config.define("_MBCS", None);
         config.define("WIN64", None);
         config.define("NOMINMAX", None);
+        config.define("WITH_WINDOWS_UTF8_FILENAMES", "ON");
 
         if &target == "x86_64-pc-windows-gnu" {
             // Tell MinGW to create localtime_r wrapper of localtime_s function.
@@ -186,6 +187,10 @@ fn build_rocksdb() {
     }
 
     config.define("ROCKSDB_SUPPORT_THREAD_LOCAL", None);
+
+    if cfg!(feature = "jemalloc") {
+        config.define("WITH_JEMALLOC", "ON");
+    }
 
     if target.contains("msvc") {
         config.flag("-EHsc");
